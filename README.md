@@ -9,6 +9,7 @@ Análise léxica, análise sintática e geração da AST de uma linguagem de com
 |---|---|
 | Giulia Nogueira Lopes de Sá | 23024383 |
 | Ruan Paulo de Sousa Soares | 23024986 |
+| Rafael Ferreira | 23024975 |
 
 ## Entrega
 
