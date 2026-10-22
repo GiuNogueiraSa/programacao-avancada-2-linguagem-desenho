@@ -24,7 +24,9 @@ Análise léxica, análise sintática e geração da AST de uma linguagem de com
 
 ## Como executar
 
-Os arquivos usam módulos JavaScript (`type="module"`), que o navegador não carrega abrindo o `index.html` direto do disco. Use uma destas opções:
+**Página online:** https://giunogueirasa.github.io/programacao-avancada-2-linguagem-desenho/
+
+Para rodar localmente: os arquivos usam módulos JavaScript (`type="module"`), que o navegador não carrega abrindo o `index.html` direto do disco. Use uma destas opções:
 
 - abrir a pasta no VS Code e usar a extensão **Live Server**; ou
 - rodar `python -m http.server` na pasta e acessar `http://localhost:8000`.
