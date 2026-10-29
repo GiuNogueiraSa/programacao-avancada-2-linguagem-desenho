@@ -11,6 +11,7 @@ Análise léxica, análise sintática e geração da AST de uma linguagem de com
 | Ruan Paulo de Sousa Soares | 23024986 |
 | Rafael Ferreira | 23024975 |
 | Yasmin Ribeiro | 23024985 |
+| Marco | 25028231 |
 
 ## Entrega
 
