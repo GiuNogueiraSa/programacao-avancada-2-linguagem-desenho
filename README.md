@@ -1,7 +1,8 @@
-# Linguagem de desenho — Fase 1
+# Linguagem de desenho — Fase 2: da AST ao SVG
 
 Laboratório de Programação Avançada II (Compiladores).
-Análise léxica, análise sintática e geração da AST de uma linguagem de comandos para descrever desenhos.
+Verificação semântica e gerador de SVG para a linguagem de desenho. O caminho completo roda na página-base:
+programa → tokens → AST → verificação semântica → SVG → desenho.
 
 ## Integrantes
 
@@ -18,13 +19,14 @@ Análise léxica, análise sintática e geração da AST de uma linguagem de com
 
 | Arquivo | Conteúdo |
 |---|---|
-| [`especificacao.pdf`](especificacao.pdf) / [`especificacao.docx`](especificacao.docx) | Especificação: descrição da linguagem, definição léxica, gramática, tabela da AST e decisões de projeto |
-| [`tokens.js`](tokens.js) | Regras léxicas (expressões regulares) |
-| [`lexer.js`](lexer.js) | Analisador léxico |
-| [`parser.js`](parser.js) | Analisador sintático descendente recursivo e geração da AST |
-| [`main.js`](main.js) | Liga a página às duas fases e carrega os casos de teste |
-| [`index.html`](index.html) | Página de teste |
-| [`casos-de-teste.md`](casos-de-teste.md) | 5 programas válidos e 3 inválidos, com o resultado esperado |
+| [`docs/documento-semantica.pdf`](docs/documento-semantica.pdf) | Documento de semântica: mapeamento de nós para SVG, tabela de cores, verificações e decisões de projeto |
+| [`semantica.js`](semantica.js) | Verificação semântica: `verificar(ast)` devolve os erros com a linha |
+| [`gerador.js`](gerador.js) | Gerador de SVG: `gerarSVG(ast)` percorre a AST recursivamente |
+| [`parser.js`](parser.js) | Parser da Fase 1, com o campo `linha` em cada nó da AST e o estilo em qualquer ordem |
+| [`tokens.js`](tokens.js), [`lexer.js`](lexer.js) | Análise léxica (Fase 1) |
+| [`svg.js`](svg.js), [`main.js`](main.js), [`index.html`](index.html) | Página-base do professor (sem alterações) |
+| [`testes/`](testes/) | 8 programas de teste (5 válidos, 2 com erro semântico e o desenho final), cada um com seu `.svg` e imagem; [`casos-de-teste.md`](testes/casos-de-teste.md) descreve o resultado esperado |
+| [`fase1/`](fase1/) | Entrega da Fase 1 (léxico, sintático, AST e especificação), preservada como estava |
 
 ## Como executar
 
@@ -35,59 +37,27 @@ Para rodar localmente: os arquivos usam módulos JavaScript (`type="module"`), q
 - abrir a pasta no VS Code e usar a extensão **Live Server**; ou
 - rodar `python -m http.server` na pasta e acessar `http://localhost:8000`.
 
-Na página, escolha um dos casos de teste no seletor ou digite um programa e clique em **Analisar**. A página mostra os tokens (linha, tipo e lexema) e, conforme o caso, os erros léxicos, o erro sintático ou a AST (em árvore e em JSON).
+Escreva um programa na caixa da esquerda e clique em **Analisar**. A página mostra os tokens, as mensagens de cada fase e, se não houver erro, o SVG na caixa da direita, já desenhado. O botão **Baixar .svg** salva o arquivo `desenho.svg`.
 
-## A linguagem em resumo
+## Erros que a página mostra
 
-```
-tela(400, 300)
-% corpo do carro
-retangulo(50, 150, 200, 60) fundo=azul
+- **Léxico:** trecho que não forma nenhum token (por exemplo, `quadrado`).
+- **Sintático:** linha, o que era esperado e o que foi encontrado.
+- **Semântico:** linha e motivo. São três verificações: tela com largura ou altura zero, círculo com raio zero e retângulo com largura ou altura zero.
 
-% roda dianteira, com um raio girado
-grupo mover(70, 190) {
-    circulo(0, 0, 25) fundo=preto
-    grupo girar(45) {
-        reta(0, 0, 20, 0) traco=branco espessura=2
-    }
-}
+Em cada fase com erro, as seguintes não rodam, e nenhum SVG é gerado.
 
-% roda traseira
-grupo mover(200, 190) {
-    circulo(0, 0, 25) fundo=preto
-}
-```
+## Desenho final
 
-| Elemento | Sintaxe |
-|---|---|
-| Tela | `tela(largura, altura)`, obrigatória e no início |
-| Formas | `reta(x1, y1, x2, y2)`, `circulo(cx, cy, raio)`, `retangulo(x, y, largura, altura)` |
-| Estilo (opcional, nesta ordem) | `traco=cor` `fundo=cor` `espessura=N` |
-| Grupo | `grupo modificadores { formas e grupos }` |
-| Modificadores (só em grupos) | `girar(ângulo)` e `mover(dx, dy)`, quantos quiser, na ordem escrita |
-| Cores | `vermelho` `verde` `azul` `amarelo` `laranja` `roxo` `rosa` `preto` `branco` `cinza` ou `#RRGGBB` |
-| Números | inteiros sem sinal; `0` é aceito, `05` é erro léxico |
-| Comentário | `%` até o fim da linha |
+[`testes/programas/desenho-final-robo.txt`](testes/programas/desenho-final-robo.txt) desenha um robô com sol e chão. Ele usa as três formas, grupos aninhados (o robô é um grupo, e os braços são grupos dentro dele) e os dois modificadores (`mover` e `girar`).
 
-### Gramática (símbolo inicial: `programa`)
+![Desenho final](testes/imagens/desenho-final-robo.png)
 
-```
-programa       → tela elementos
-tela           → TELA ABREPAR NUM VIRGULA NUM FECHAPAR
-elementos      → elemento elementos | ε
-elemento       → forma | grupo
-forma          → RETA ABREPAR NUM VIRGULA NUM VIRGULA NUM VIRGULA NUM FECHAPAR estilo
-               | CIRCULO ABREPAR NUM VIRGULA NUM VIRGULA NUM FECHAPAR estilo
-               | RETANGULO ABREPAR NUM VIRGULA NUM VIRGULA NUM VIRGULA NUM FECHAPAR estilo
-estilo         → traco_opc fundo_opc espessura_opc
-traco_opc      → TRACO IGUAL cor | ε
-fundo_opc      → FUNDO IGUAL cor | ε
-espessura_opc  → ESPESSURA IGUAL NUM | ε
-cor            → COR_NOME | COR_HEX
-grupo          → GRUPO modificadores ABRECHAVE elemento elementos FECHACHAVE
-modificadores  → modificador modificadores | ε
-modificador    → GIRAR ABREPAR NUM FECHAPAR
-               | MOVER ABREPAR NUM VIRGULA NUM FECHAPAR
-```
+## Decisões de projeto
 
-A tabela completa de tokens, a tabela da AST e todas as decisões de projeto (grupo vazio, atributos repetidos, zeros à esquerda, comentário e cor hexadecimal) estão na [especificação](especificacao.pdf).
+Estão no [documento de semântica](docs/documento-semantica.pdf). Em resumo:
+
+- estilo ausente: traço preto, espessura 1 e sem preenchimento; cada forma escreve os três atributos;
+- grupo sem modificadores vira `<g>` sem `transform`;
+- vários modificadores viram um único `transform`, na ordem em que foram escritos;
+- atributo de estilo repetido vale o último, e os atributos podem vir em qualquer ordem (ajuste no parser da Fase 1).

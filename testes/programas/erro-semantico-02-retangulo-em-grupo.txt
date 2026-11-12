@@ -1,0 +1,5 @@
+tela(300, 200)
+grupo mover(10, 10) {
+    circulo(50, 50, 10) fundo=verde
+    retangulo(0, 0, 50, 0) fundo=rosa
+}

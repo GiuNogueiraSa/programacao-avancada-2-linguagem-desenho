@@ -1,0 +1,6 @@
+tela(300, 300)
+retangulo(0, 200, 300, 100) fundo=#3A7D44
+retangulo(75, 120, 150, 120) traco=#5C3317 fundo=#F5DEB3 espessura=3
+reta(75, 120, 150, 50) traco=vermelho espessura=4
+reta(150, 50, 225, 120) traco=vermelho espessura=4
+retangulo(135, 180, 30, 60) fundo=#8B4513

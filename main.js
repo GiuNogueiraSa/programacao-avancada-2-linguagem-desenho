@@ -1,197 +1,136 @@
+// main.js · liga a página aos módulos (PRONTO: não precisa alterar)
+
 import { analisarLexico } from "./lexer.js";
 import { analisarSintatico } from "./parser.js";
+import { verificar } from "./semantica.js";
+import { gerarSVG } from "./gerador.js";
+import { desenharSvg, baixarSvg } from "./svg.js";
 
-export const casos = [
-    {
-        nome: "Válido 1 — Tela em branco",
-        codigo: `% o menor programa possível: só a tela
-tela(200, 100)`
-    },
-    {
-        nome: "Válido 2 — Carro",
-        codigo: `tela(400, 300)
-% corpo do carro
-retangulo(50, 150, 200, 60) fundo=azul
+const ESTILO = {
+    erro: "rounded-md border-l-4 border-red-500 bg-red-50 px-3 py-2 text-sm text-red-800",
+    aviso: "rounded-md border-l-4 border-amber-500 bg-amber-50 px-3 py-2 text-sm text-amber-800",
+    ok: "rounded-md border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-sm text-emerald-800",
+};
 
-% roda dianteira, com um raio girado
-grupo mover(70, 190) {
-    circulo(0, 0, 25) fundo=preto
-    grupo girar(45) {
-        reta(0, 0, 20, 0) traco=branco espessura=2
+// Mostra uma lista de mensagens { nivel, etapa, texto } dentro de um elemento
+function mostrar(elemento, lista) {
+    elemento.innerHTML = "";
+    for (const m of lista) {
+        const p = document.createElement("p");
+        p.className = ESTILO[m.nivel];
+        p.textContent = m.etapa ? m.etapa + ": " + m.texto : m.texto;     // textContent: nunca interpreta o texto
+        elemento.appendChild(p);
     }
 }
 
-% roda traseira
-grupo mover(200, 190) {
-    circulo(0, 0, 25) fundo=preto
-}`
-    },
-    {
-        nome: "Válido 3 — Casa com cores hexadecimais",
-        codigo: `tela(300, 300)
-retangulo(0, 200, 300, 100) fundo=#3A7D44
-retangulo(75, 120, 150, 120) traco=#5C3317 fundo=#F5DEB3 espessura=3
-reta(75, 120, 150, 50) traco=vermelho espessura=4
-reta(150, 50, 225, 120) traco=vermelho espessura=4
-retangulo(135, 180, 30, 60) fundo=#8B4513`
-    },
-    {
-        nome: "Válido 4 — Grupos aninhados e modificadores em ordem",
-        codigo: `tela(500, 500)
-grupo mover(250, 250) girar(30) {          % deslocamento e depois rotação
-    circulo(0, 0, 100) traco=cinza
-    grupo girar(90) mover(10, 0) {        % rotação e depois deslocamento
-        retangulo(0, 0, 40, 40) fundo=amarelo
-        grupo {                            % grupo sem modificadores
-            reta(0, 0, 0, 80) traco=roxo espessura=1
-        }
+// ---------------------- coluna da direita: SVG ----------------------
+
+function desenhar() {
+    const texto = document.getElementById("saida").value;
+    const resultado = desenharSvg(texto, document.getElementById("figura"));
+
+    let nivel = "ok";
+    if (!resultado.ok) {
+        nivel = "erro";
+    } else if (resultado.aviso) {
+        nivel = "aviso";
     }
-}`
-    },
-    {
-        nome: "Válido 5 — Formato livre e zeros",
-        codigo: `tela(0,0) circulo(0,0,0) traco = rosa fundo = laranja espessura = 0 reta(10,10,10,10)traco=verde
-grupo mover(0,0)mover(5,5){retangulo(1,2,3,4)fundo=#00ff00}`
-    },
-    {
-        nome: "Inválido 1 — Erros léxicos",
-        codigo: `tela(300, 200)
-circulo(50, 50, 20) traco=#12ab fundo=azul
-quadrado 10 10
-retangulo(10, 10, 50, 30) espessura=05`
-    },
-    {
-        nome: "Inválido 2 — Erro sintático: falta um argumento",
-        codigo: `tela(300, 200)
-retangulo(10, 10, 50, 30)
-circulo(100, 100) fundo=verde`
-    },
-    {
-        nome: "Inválido 3 — Erro sintático: grupo não fechado",
-        codigo: `tela(300, 200)
-grupo mover(10, 10) {
-    reta(0, 0, 100, 0)
-    circulo(50, 50, 10)
-`
-    }
-];
-
-const entrada = document.getElementById("entrada");
-const seletor = document.getElementById("exemplos");
-
-for (let k = 0; k < casos.length; k++) {
-    const opcao = document.createElement("option");
-    opcao.value = k;
-    opcao.textContent = casos[k].nome;
-    seletor.appendChild(opcao);
+    mostrar(document.getElementById("msg-svg"), [{ nivel: nivel, etapa: "", texto: resultado.mensagem }]);
 }
 
-seletor.addEventListener("change", function () {
-    if (seletor.value !== "") {
-        entrada.value = casos[Number(seletor.value)].codigo;
-        analisar();
-    }
-});
-
-function celula(linha, texto) {
-    const td = document.createElement("td");
-    td.textContent = texto;
-    linha.appendChild(td);
-}
-
-function mostrarTokens(tokens) {
-    const corpo = document.getElementById("corpoTokens");
-    corpo.innerHTML = "";
-    for (const token of tokens) {
-        const tr = document.createElement("tr");
-        celula(tr, token.linha);
-        celula(tr, token.tipo);
-        celula(tr, token.lexema);
-        corpo.appendChild(tr);
-    }
-    document.getElementById("totalTokens").textContent = tokens.length + " tokens";
-}
-
-function descreverNo(no) {
-    if (no.tipo === "Tela") return "Tela " + no.largura + " x " + no.altura;
-    if (no.tipo === "Reta") return "Reta (" + no.x1 + ", " + no.y1 + ") até (" + no.x2 + ", " + no.y2 + ")";
-    if (no.tipo === "Circulo") return "Circulo centro (" + no.cx + ", " + no.cy + ") raio " + no.raio;
-    if (no.tipo === "Retangulo") return "Retangulo (" + no.x + ", " + no.y + ") " + no.largura + " x " + no.altura;
-    if (no.tipo === "Rotacao") return "Rotacao " + no.angulo;
-    if (no.tipo === "Deslocamento") return "Deslocamento (" + no.dx + ", " + no.dy + ")";
-    return no.tipo;
-}
-
-function descreverEstilo(estilo) {
-    const partes = [];
-    if (estilo.traco !== null) partes.push("traço " + estilo.traco);
-    if (estilo.preenchimento !== null) partes.push("preenchimento " + estilo.preenchimento);
-    if (estilo.espessura !== null) partes.push("espessura " + estilo.espessura);
-    return partes.length > 0 ? " [" + partes.join(", ") + "]" : "";
-}
-
-function arvore(no, prefixo, ultimo, linhas) {
-    const ramo = prefixo === null ? "" : prefixo + (ultimo ? "└─ " : "├─ ");
-    const proximo = prefixo === null ? "" : prefixo + (ultimo ? "   " : "│  ");
-    let texto = descreverNo(no);
-    if (no.estilo) texto += descreverEstilo(no.estilo);
-    linhas.push(ramo + texto);
-
-    const filhos = [];
-    if (no.tipo === "Programa") {
-        filhos.push(no.tela, ...no.elementos);
-    } else if (no.tipo === "Grupo") {
-        filhos.push(...no.modificadores, ...no.elementos);
-    }
-    filhos.forEach(function (filho, k) {
-        arvore(filho, proximo, k === filhos.length - 1, linhas);
-    });
-}
-
-function mostrarResultado(classe, titulo, texto) {
-    const caixa = document.getElementById("resultado");
-    caixa.className = classe;
-    document.getElementById("tituloResultado").textContent = titulo;
-    document.getElementById("textoResultado").textContent = texto;
-}
+// ---------------------- coluna da esquerda: Fases 1 e 2 ----------------------
 
 function analisar() {
-    const { tokens, erros } = analisarLexico(entrada.value);
-    mostrarTokens(tokens);
+    const texto = document.getElementById("entrada").value;
+    const area = document.getElementById("mensagens");
+    const mensagens = [];
+    document.getElementById("tokens").textContent = "";
+    document.getElementById("ast").textContent = "";
 
-    const blocoAst = document.getElementById("blocoAst");
-    blocoAst.hidden = true;
-
-    if (erros.length > 0) {
-        const mensagens = erros.map(function (erro) {
-            return "Linha " + erro.linha + ': "' + erro.lexema + '" não forma nenhum token';
-        });
-        mostrarResultado("erro", "Erros léxicos (a análise sintática não foi executada)", mensagens.join("\n"));
+    // 1) léxico
+    let resultado;
+    try {
+        resultado = analisarLexico(texto);
+    } catch (falha) {
+        mensagens.push({ nivel: "aviso", etapa: "Léxico", texto: falha.message });
+        mostrar(area, mensagens);
         return;
     }
 
-    try {
-        const ast = analisarSintatico(tokens);
-        mostrarResultado("ok", "Programa válido", "Análises léxica e sintática concluídas sem erros.");
-        const linhas = [];
-        arvore(ast, null, true, linhas);
-        document.getElementById("arvore").textContent = linhas.join("\n");
-        document.getElementById("json").textContent = JSON.stringify(ast, null, 2);
-        blocoAst.hidden = false;
-    } catch (falha) {
-        if (falha.linha === undefined) {
-            throw falha;
-        }
-        mostrarResultado(
-            "erro",
-            "Erro sintático",
-            "Linha: " + falha.linha + "\nEsperado: " + falha.esperado + "\nEncontrado: " + falha.encontrado
-        );
+    const linhasTokens = [];
+    for (const token of resultado.tokens) {
+        linhasTokens.push("linha " + token.linha + "  " + token.tipo.padEnd(14) + '"' + token.lexema + '"');
     }
+    document.getElementById("tokens").textContent = linhasTokens.join("\n");
+
+    if (resultado.erros.length > 0) {                        // com erro léxico, o sintático não roda
+        for (const erro of resultado.erros) {
+            mensagens.push({ nivel: "erro", etapa: "Erro léxico", texto: 'linha ' + erro.linha + ': "' + erro.lexema + '" não forma nenhum token' });
+        }
+        mostrar(area, mensagens);
+        return;
+    }
+
+    // 2) sintático
+    let ast;
+    try {
+        ast = analisarSintatico(resultado.tokens);
+    } catch (falha) {
+        mensagens.push({ nivel: "erro", etapa: "", texto: falha.message });          // a mensagem do parser já diz "Erro sintático..."
+        mostrar(area, mensagens);
+        return;
+    }
+    if (ast === undefined) {
+        mensagens.push({ nivel: "aviso", etapa: "Sintático", texto: "parser.js ainda não devolve a AST: complete analisarSintatico()." });
+        mostrar(area, mensagens);
+        return;
+    }
+    document.getElementById("ast").textContent = JSON.stringify(ast, null, 2);
+    mensagens.push({ nivel: "ok", etapa: "Sintático", texto: "programa válido." });
+
+    // 3) semântico (Fase 2)
+    let errosSemanticos;
+    try {
+        errosSemanticos = verificar(ast);
+    } catch (falha) {
+        mensagens.push({ nivel: "erro", etapa: "Semântico", texto: falha.message });
+        mostrar(area, mensagens);
+        return;
+    }
+    if (errosSemanticos === undefined) {
+        mensagens.push({ nivel: "aviso", etapa: "Semântico", texto: "verificar() ainda não foi implementada (Fase 2)." });
+    } else if (errosSemanticos.length > 0) {
+        for (const erro of errosSemanticos) {
+            mensagens.push({ nivel: "erro", etapa: "Erro semântico", texto: "linha " + erro.linha + ": " + erro.mensagem });
+        }
+        mostrar(area, mensagens);
+        return;
+    }
+
+    // 4) gerador de SVG (Fase 2)
+    let svg;
+    try {
+        svg = gerarSVG(ast);
+    } catch (falha) {
+        mensagens.push({ nivel: "erro", etapa: "Gerador", texto: falha.message });
+        mostrar(area, mensagens);
+        return;
+    }
+    if (svg === undefined) {
+        mensagens.push({ nivel: "aviso", etapa: "Gerador", texto: "gerarSVG() ainda não foi implementada (Fase 2)." });
+        mostrar(area, mensagens);
+        return;
+    }
+    document.getElementById("saida").value = svg;
+    mensagens.push({ nivel: "ok", etapa: "Gerador", texto: "SVG gerado." });
+    mostrar(area, mensagens);
+    desenhar();
 }
 
-document.getElementById("botao").addEventListener("click", analisar);
+document.getElementById("btn-analisar").addEventListener("click", analisar);
+document.getElementById("btn-desenhar").addEventListener("click", desenhar);
+document.getElementById("btn-baixar").addEventListener("click", function () {
+    baixarSvg(document.getElementById("saida").value);
+});
 
-entrada.value = casos[1].codigo;
-seletor.value = "1";
-analisar();
+desenhar();      // já mostra o SVG que vem na caixa da direita

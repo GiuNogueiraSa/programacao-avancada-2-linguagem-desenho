@@ -1,0 +1,2 @@
+tela(100,100) circulo(50,50,20) traco = rosa fundo = laranja espessura = 0 reta(10,10,90,90)traco=verde
+grupo mover(0,0)mover(5,5){retangulo(1,2,3,4)fundo=#00ff00}

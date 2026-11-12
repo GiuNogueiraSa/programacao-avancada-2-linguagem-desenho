@@ -1,0 +1,2 @@
+tela(0, 200)
+circulo(50, 50, 0) fundo=azul

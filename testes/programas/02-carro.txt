@@ -1,0 +1,16 @@
+tela(400, 300)
+% um carro simples
+retangulo(50, 150, 200, 60) fundo=azul
+
+% roda dianteira, com um raio girado
+grupo mover(70, 190) {
+    circulo(0, 0, 25) fundo=preto
+    grupo girar(45) {
+        reta(0, 0, 20, 0) traco=branco espessura=2
+    }
+}
+
+% roda traseira
+grupo mover(200, 190) {
+    circulo(0, 0, 25) fundo=preto
+}

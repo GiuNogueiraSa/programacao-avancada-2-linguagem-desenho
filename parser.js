@@ -45,6 +45,10 @@ export function analisarSintatico(tokens) {
         return atual() !== undefined && atual().tipo === tipo;
     }
 
+    function linhaAtual() {
+        return atual() !== undefined ? atual().linha : ultimaLinha;
+    }
+
     function falhar(esperado) {
         const token = atual();
         if (token === undefined) {
@@ -82,6 +86,7 @@ export function analisarSintatico(tokens) {
     }
 
     function programa() {
+        const linha = linhaAtual();
         if (!ve("TELA")) {
             falhar('TELA "tela" (a declaração da tela é obrigatória no início)');
         }
@@ -90,13 +95,14 @@ export function analisarSintatico(tokens) {
         if (atual() !== undefined) {
             falhar("uma forma (reta, circulo, retangulo), um grupo ou o fim do programa");
         }
-        return { tipo: "Programa", tela, elementos };
+        return { tipo: "Programa", linha, tela, elementos };
     }
 
     function declaracaoTela() {
+        const linha = linhaAtual();
         esperar("TELA");
         const [largura, altura] = argumentos(2);
-        return { tipo: "Tela", largura, altura };
+        return { tipo: "Tela", linha, largura, altura };
     }
 
     function listaElementos() {
@@ -115,40 +121,42 @@ export function analisarSintatico(tokens) {
     }
 
     function forma() {
+        const linha = linhaAtual();
         if (ve("RETA")) {
             esperar("RETA");
             const [x1, y1, x2, y2] = argumentos(4);
-            return { tipo: "Reta", x1, y1, x2, y2, estilo: estilo() };
+            return { tipo: "Reta", linha, x1, y1, x2, y2, estilo: estilo() };
         }
         if (ve("CIRCULO")) {
             esperar("CIRCULO");
             const [cx, cy, raio] = argumentos(3);
-            return { tipo: "Circulo", cx, cy, raio, estilo: estilo() };
+            return { tipo: "Circulo", linha, cx, cy, raio, estilo: estilo() };
         }
         if (ve("RETANGULO")) {
             esperar("RETANGULO");
             const [x, y, largura, altura] = argumentos(4);
-            return { tipo: "Retangulo", x, y, largura, altura, estilo: estilo() };
+            return { tipo: "Retangulo", linha, x, y, largura, altura, estilo: estilo() };
         }
         falhar("uma forma (reta, circulo, retangulo) ou um grupo");
     }
 
+    // Os atributos de estilo podem vir em qualquer ordem, e o último repetido vale.
     function estilo() {
         const resultado = { traco: null, preenchimento: null, espessura: null };
-        if (ve("TRACO")) {
-            esperar("TRACO");
-            esperar("IGUAL");
-            resultado.traco = cor();
-        }
-        if (ve("FUNDO")) {
-            esperar("FUNDO");
-            esperar("IGUAL");
-            resultado.preenchimento = cor();
-        }
-        if (ve("ESPESSURA")) {
-            esperar("ESPESSURA");
-            esperar("IGUAL");
-            resultado.espessura = numero();
+        while (ve("TRACO") || ve("FUNDO") || ve("ESPESSURA")) {
+            if (ve("TRACO")) {
+                esperar("TRACO");
+                esperar("IGUAL");
+                resultado.traco = cor();
+            } else if (ve("FUNDO")) {
+                esperar("FUNDO");
+                esperar("IGUAL");
+                resultado.preenchimento = cor();
+            } else {
+                esperar("ESPESSURA");
+                esperar("IGUAL");
+                resultado.espessura = numero();
+            }
         }
         return resultado;
     }
@@ -163,6 +171,7 @@ export function analisarSintatico(tokens) {
     }
 
     function grupo() {
+        const linha = linhaAtual();
         esperar("GRUPO");
         const modificadores = [];
         while (ve("GIRAR") || ve("MOVER")) {
@@ -180,18 +189,19 @@ export function analisarSintatico(tokens) {
             falhar('uma forma, um grupo ou FECHACHAVE "}"');
         }
         esperar("FECHACHAVE");
-        return { tipo: "Grupo", modificadores, elementos };
+        return { tipo: "Grupo", linha, modificadores, elementos };
     }
 
     function modificador() {
+        const linha = linhaAtual();
         if (ve("GIRAR")) {
             esperar("GIRAR");
             const [angulo] = argumentos(1);
-            return { tipo: "Rotacao", angulo };
+            return { tipo: "Rotacao", linha, angulo };
         }
         esperar("MOVER");
         const [dx, dy] = argumentos(2);
-        return { tipo: "Deslocamento", dx, dy };
+        return { tipo: "Deslocamento", linha, dx, dy };
     }
 
     return programa();

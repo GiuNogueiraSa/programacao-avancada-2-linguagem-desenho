@@ -1,0 +1,25 @@
+tela(400, 400)
+% sol e chão
+circulo(330, 60, 30) fundo=amarelo traco=laranja espessura=3
+retangulo(0, 340, 400, 60) fundo=verde
+
+% robô: a origem do grupo fica no canto superior esquerdo da cabeça
+grupo mover(120, 120) {
+    % cabeça e olhos
+    retangulo(30, 0, 120, 90) fundo=cinza traco=preto espessura=3
+    circulo(60, 40, 12) fundo=azul traco=preto
+    circulo(120, 40, 12) fundo=azul traco=preto
+
+    % corpo
+    retangulo(20, 110, 140, 130) fundo=amarelo traco=preto espessura=3
+
+    % braço esquerdo: grupo com mover e girar, em torno do ombro
+    grupo mover(20, 130) girar(150) {
+        reta(0, 0, 70, 0) traco=preto espessura=8
+    }
+
+    % braço direito
+    grupo mover(160, 130) girar(30) {
+        reta(0, 0, 70, 0) traco=preto espessura=8
+    }
+}

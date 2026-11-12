@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analisador da linguagem de desenho</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 0 16px;
+            color: #222;
+        }
+
+        h1 {
+            margin-bottom: 4px;
+        }
+
+        .subtitulo {
+            color: #666;
+            margin-top: 0;
+        }
+
+        .controles {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 260px;
+            font-family: monospace;
+            font-size: 15px;
+            box-sizing: border-box;
+            padding: 8px;
+        }
+
+        button {
+            padding: 8px 18px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        select {
+            padding: 6px;
+            font-size: 14px;
+        }
+
+        .colunas {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 800px) {
+            .colunas {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .tabela-tokens {
+            max-height: 520px;
+            overflow: auto;
+            border: 1px solid #ccc;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #eee;
+            padding: 4px 8px;
+            text-align: left;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background: #f3f3f3;
+        }
+
+        #resultado {
+            border: 1px solid #ccc;
+            border-left-width: 6px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+        }
+
+        #resultado.ok {
+            border-color: #2e7d32;
+            background: #eef7ee;
+        }
+
+        #resultado.erro {
+            border-color: #b00020;
+            background: #fdecee;
+        }
+
+        #tituloResultado {
+            margin: 0 0 6px;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .caixa {
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #fafafa;
+            overflow: auto;
+        }
+
+        #json {
+            max-height: 480px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Analisador da linguagem de desenho</h1>
+    <p class="subtitulo">Fase 1: análise léxica, análise sintática e geração da AST</p>
+
+    <div class="controles">
+        <label for="exemplos">Casos de teste:</label>
+        <select id="exemplos">
+            <option value="">Escolha um caso...</option>
+        </select>
+    </div>
+
+    <textarea id="entrada" spellcheck="false"></textarea>
+    <br>
+    <button id="botao">Analisar</button>
+
+    <div class="colunas">
+        <section>
+            <h3>Tokens <small id="totalTokens"></small></h3>
+            <div class="tabela-tokens">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Linha</th>
+                            <th>Tipo</th>
+                            <th>Lexema</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTokens"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h3>Resultado</h3>
+            <div id="resultado">
+                <h4 id="tituloResultado"></h4>
+                <pre id="textoResultado"></pre>
+            </div>
+
+            <div id="blocoAst" hidden>
+                <h3>Árvore</h3>
+                <pre id="arvore" class="caixa"></pre>
+                <h3>AST em JSON</h3>
+                <pre id="json" class="caixa"></pre>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
